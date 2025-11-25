@@ -105,6 +105,22 @@ message: |
 # For available placeholders see above
 title: "{crawler}: {title}"
 
+# Enable GPT-based summaries before sending notifications.
+# Supported env overrides:
+#   FLATHUNTER_GPT_ENABLE, FLATHUNTER_GPT_API_KEY, FLATHUNTER_GPT_BASE_URL,
+#   FLATHUNTER_GPT_MODEL, FLATHUNTER_GPT_SYSTEM_PROMPT,
+#   FLATHUNTER_GPT_TEMPERATURE, FLATHUNTER_GPT_TIMEOUT
+gpt:
+    enable: false
+    api_key: ""
+    api_base: "https://api.openai.com/v1"
+    model: "gpt-4o-mini"
+    temperature: 0.2
+    timeout: 30
+    system_prompt: >
+        Ты — помощник по аренде жилья. Суммируй объявления коротко,
+        структурировано и без лишних маркетинговых фраз.
+
 # Calculating durations requires access to the Google Maps API.
 # Below you can configure the URL to access the API, with placeholders.
 # The URL should most probably just kept like that.

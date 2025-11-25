@@ -68,6 +68,13 @@ class Env:
     FLATHUNTER_LOOP_PAUSE_FROM = _read_env("FLATHUNTER_LOOP_PAUSE_FROM")
     FLATHUNTER_LOOP_PAUSE_TILL = _read_env("FLATHUNTER_LOOP_PAUSE_TILL")
     FLATHUNTER_MESSAGE_FORMAT = _read_env("FLATHUNTER_MESSAGE_FORMAT")
+    FLATHUNTER_GPT_ENABLE = _read_env("FLATHUNTER_GPT_ENABLE")
+    FLATHUNTER_GPT_API_KEY = _read_env("FLATHUNTER_GPT_API_KEY")
+    FLATHUNTER_GPT_BASE_URL = _read_env("FLATHUNTER_GPT_BASE_URL")
+    FLATHUNTER_GPT_MODEL = _read_env("FLATHUNTER_GPT_MODEL")
+    FLATHUNTER_GPT_SYSTEM_PROMPT = _read_env("FLATHUNTER_GPT_SYSTEM_PROMPT")
+    FLATHUNTER_GPT_TEMPERATURE = _read_env("FLATHUNTER_GPT_TEMPERATURE")
+    FLATHUNTER_GPT_TIMEOUT = _read_env("FLATHUNTER_GPT_TIMEOUT")
 
     # Website setup
     FLATHUNTER_WEBSITE_SESSION_KEY = _read_env(
@@ -121,6 +128,12 @@ Größe: {size}
 Preis: {price}
 
 {url}"""
+    DEFAULT_GPT_BASE_URL = "https://api.openai.com/v1"
+    DEFAULT_GPT_MODEL = "gpt-4o-mini"
+    DEFAULT_GPT_SYSTEM_PROMPT = (
+        "Ты — помощник по аренде жилья. Суммируй объявления коротко, "
+        "структурировано и без лишних маркетинговых фраз."
+    )
 
     def __init__(self, config=None):
         if config is None:
@@ -272,6 +285,34 @@ Preis: {price}
         if config_format is not None:
             return config_format
         return self.DEFAULT_MESSAGE_FORMAT
+
+    def gpt_enabled(self) -> bool:
+        """Whether GPT summarisation is enabled"""
+        return bool(self._read_yaml_path('gpt.enable', False))
+
+    def gpt_api_key(self) -> Optional[str]:
+        """API key used for GPT requests"""
+        return self._read_yaml_path('gpt.api_key', None)
+
+    def gpt_api_base(self) -> str:
+        """Base URL for GPT API requests"""
+        return self._read_yaml_path('gpt.api_base', self.DEFAULT_GPT_BASE_URL)
+
+    def gpt_model(self) -> str:
+        """Model name for GPT API requests"""
+        return self._read_yaml_path('gpt.model', self.DEFAULT_GPT_MODEL)
+
+    def gpt_system_prompt(self) -> str:
+        """System prompt for GPT expose summaries"""
+        return self._read_yaml_path('gpt.system_prompt', self.DEFAULT_GPT_SYSTEM_PROMPT)
+
+    def gpt_temperature(self) -> float:
+        """Temperature parameter for GPT API requests"""
+        return float(self._read_yaml_path('gpt.temperature', 0.2))
+
+    def gpt_timeout_seconds(self) -> int:
+        """Timeout for GPT API requests"""
+        return int(self._read_yaml_path('gpt.timeout', 30))
 
     def notifiers(self) -> List[str]:
         """List of currently-active notifiers"""
@@ -531,6 +572,36 @@ class Config(CaptchaEnvironmentConfig):  # pylint: disable=too-many-public-metho
         if env_message_format is not None:
             return '\n'.join(env_message_format.split('#CR#'))
         return super().message_format()
+
+    def gpt_enabled(self) -> bool:
+        env_flag = Env.FLATHUNTER_GPT_ENABLE()
+        if env_flag is not None:
+            return _to_bool(env_flag)
+        return super().gpt_enabled()
+
+    def gpt_api_key(self) -> Optional[str]:
+        return Env.FLATHUNTER_GPT_API_KEY() or super().gpt_api_key()
+
+    def gpt_api_base(self) -> str:
+        return Env.FLATHUNTER_GPT_BASE_URL() or super().gpt_api_base()
+
+    def gpt_model(self) -> str:
+        return Env.FLATHUNTER_GPT_MODEL() or super().gpt_model()
+
+    def gpt_system_prompt(self) -> str:
+        return Env.FLATHUNTER_GPT_SYSTEM_PROMPT() or super().gpt_system_prompt()
+
+    def gpt_temperature(self) -> float:
+        env_temp = Env.FLATHUNTER_GPT_TEMPERATURE()
+        if env_temp is not None:
+            return float(env_temp)
+        return super().gpt_temperature()
+
+    def gpt_timeout_seconds(self) -> int:
+        env_timeout = Env.FLATHUNTER_GPT_TIMEOUT()
+        if env_timeout is not None:
+            return int(env_timeout)
+        return super().gpt_timeout_seconds()
 
     def notifiers(self):
         env_notifiers = Env.FLATHUNTER_NOTIFIERS()

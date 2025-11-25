@@ -12,6 +12,7 @@ from flathunter.exceptions import BotBlockedException
 from flathunter.exceptions import UserDeactivatedException
 from flathunter.logging import logger
 from flathunter.utils.list import chunk_list
+from flathunter.gpt_formatter import GPTExposeFormatter
 
 
 class SenderTelegram(Processor, Notifier):
@@ -21,6 +22,7 @@ class SenderTelegram(Processor, Notifier):
         self.config = config
         self.bot_token = self.config.telegram_bot_token()
         self.__notify_with_images: bool = self.config.telegram_notify_with_images()
+        self.__gpt_formatter = GPTExposeFormatter(config)
 
         self.__text_message_url = f"https://api.telegram.org/bot{self.bot_token}/sendMessage"
         self.__media_group_url = f"https://api.telegram.org/bot{self.bot_token}/sendMediaGroup"
@@ -32,9 +34,10 @@ class SenderTelegram(Processor, Notifier):
 
     def process_expose(self, expose):
         """Send a message to a user describing the expose"""
+        message = self.__format_message(expose)
         self.__broadcast(
             receivers=self.receiver_ids,
-            message=self.__get_text_message(expose),
+            message=message,
             images=self.__get_images(expose),
         )
         return expose
@@ -158,6 +161,12 @@ class SenderTelegram(Processor, Notifier):
 
     def __get_images(self, expose: Dict) -> List[str]:
         return expose.get("images", [])
+
+    def __format_message(self, expose: Dict) -> str:
+        base_message = self.__get_text_message(expose)
+        if self.__gpt_formatter.enabled():
+            return self.__gpt_formatter.format(expose, base_message)
+        return base_message
 
     def __get_text_message(self, expose: Dict) -> str:
         """
